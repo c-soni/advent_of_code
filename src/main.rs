@@ -8,12 +8,19 @@ enum Move {
     Scissors = 3,
 }
 
-struct Game {
-    pub opp: Move,
-    pub you: Move,
+#[derive(PartialEq)]
+enum Res {
+    Lose,
+    Draw,
+    Win,
 }
 
-fn get_opponent_move(play: &str) -> Move {
+struct Game {
+    pub opp: Move,
+    pub result: Res,
+}
+
+fn get_move(play: &str) -> Move {
     if play == "A" {
         return Move::Rock;
     } else if play == "B" {
@@ -23,42 +30,41 @@ fn get_opponent_move(play: &str) -> Move {
     }
 }
 
-fn get_your_move(play: &str) -> Move {
-    if play == "X" {
-        return Move::Rock;
-    } else if play == "Y" {
-        return Move::Paper;
+fn get_desired_result(res: &str) -> Res {
+    if res == "X" {
+        return Res::Lose;
+    } else if res == "Y" {
+        return Res::Draw;
     } else {
-        return Move::Scissors;
+        return Res::Win;
     }
 }
 
 fn calculate_score(game: Game) -> u32 {
-    let mut score = 0;
-    if game.opp == game.you {
-        score = 3;
-    } else if game.opp == Move::Rock {
-        if game.you == Move::Paper {
-            score = 6;
+    let round_score = match game.result {
+        Res::Lose => 0,
+        Res::Draw => 3,
+        Res::Win => 6,
+    };
+    if game.result == Res::Draw {
+        return round_score + game.opp as u32;
+    } else if game.result == Res::Win {
+        if game.opp == Move::Rock {
+            return round_score + Move::Paper as u32;
+        } else if game.opp == Move::Paper {
+            return round_score + Move::Scissors as u32;
         } else {
-            score = 0;
-        }
-    } else if game.opp == Move::Paper {
-        if game.you == Move::Scissors {
-            score = 6;
-        } else {
-            score = 0;
-        }
-    } else if game.opp == Move::Scissors {
-        if game.you == Move::Rock {
-            score = 6;
-        } else {
-            score = 0;
+            return round_score + Move::Rock as u32;
         }
     } else {
-        return 0;
+        if game.opp == Move::Rock {
+            return round_score + Move::Scissors as u32;
+        } else if game.opp == Move::Paper {
+            return round_score + Move::Rock as u32;
+        } else {
+            return round_score + Move::Paper as u32;
+        }
     }
-    return score + game.you as u32;
 }
 
 fn main() {
@@ -71,8 +77,8 @@ fn main() {
         .map(|line| {
             let moves: Vec<&str> = line.split_whitespace().collect();
             calculate_score(Game {
-                opp: get_opponent_move(moves[0]),
-                you: get_your_move(moves[1]),
+                opp: get_move(moves[0]),
+                result: get_desired_result(moves[1]),
             })
         })
         .sum::<u32>();
