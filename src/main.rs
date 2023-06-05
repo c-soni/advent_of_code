@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 
@@ -21,19 +22,23 @@ fn build_priority_map() -> HashMap<char, u32> {
     retval
 }
 
-fn calculate_priority(line: &str, priority_map: &HashMap<char, u32>) -> u32 {
-    let mut priority = 0;
-    let length = line.len() / 2;
-    let mut table = [0 as u8; 256];
-    let left = &line[0..length];
-    let right = &line[length..line.len()];
-    left.chars().for_each(|c| table[c as usize] = 1);
-    right.chars().for_each(|c| {
-        if table[c as usize] == 1 {
-            priority = *priority_map.get(&c).expect("ERROR");
-        }
-    });
-    priority
+fn get_badge_priority(
+    i: usize,
+    line: &str,
+    table: &mut [u8; 256],
+    priority_map: &HashMap<char, u32>,
+) -> u32 {
+    let mut badge_priority = 0;
+    line.chars()
+        .collect::<HashSet<_>>()
+        .iter()
+        .for_each(|&c| table[c as usize] += 1);
+    if i % 3 == 2 {
+        let x = ((table.iter().position(|&x| x == 3).expect("Not found") as u32) as u8) as char;
+        badge_priority = *priority_map.get(&x).expect("Error fetching value");
+        table.fill(0)
+    }
+    badge_priority
 }
 
 fn main() {
@@ -41,11 +46,13 @@ fn main() {
     let file_path = &args[1];
 
     let priority_map = build_priority_map();
+    let mut table = [0 as u8; 256];
 
     let total: u32 = fs::read_to_string(file_path)
         .expect("Error reading file")
         .lines()
-        .map(|line| calculate_priority(line.trim(), &priority_map))
+        .enumerate()
+        .map(|(i, line)| get_badge_priority(i, line.trim(), &mut table, &priority_map))
         .sum::<u32>();
 
     println!("Total score: {total}");
