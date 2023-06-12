@@ -35,9 +35,12 @@ fn get_moves(moves: &mut Vec<Move>, moves_str: &[&str]) {
 
 fn get_string(state: &mut Vec<VecDeque<char>>, moves: &Vec<Move>) -> String {
     moves.iter().for_each(|m| {
-        for _ in 0..m.count {
-            let c = state[m.from].pop_front().expect("ERROR");
+        for i in (0..m.count).rev() {
+            let c = state[m.from][i as usize];
             state[m.to].push_front(c);
+        }
+        for _ in 0..m.count {
+            state[m.from].pop_front();
         }
     });
     state.into_iter().map(|v| v[0]).collect()
