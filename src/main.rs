@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 
@@ -9,17 +10,10 @@ fn main() {
         .expect("Error reading file")
         .chars()
         .collect::<Vec<char>>()
-        .windows(4)
+        .windows(14)
         .enumerate()
-        .find(|(_, cs)| {
-            cs[0] != cs[1]
-                && cs[1] != cs[2]
-                && cs[2] != cs[3]
-                && cs[3] != cs[0]
-                && cs[0] != cs[2]
-                && cs[1] != cs[3]
-        })
-        .map(|(i, _)| i + 4)
+        .find(|(_, cs)| cs.iter().collect::<HashSet<&char>>().len() == 14)
+        .map(|(i, _)| i + 14)
         .expect("Error");
 
     println!("Marker: {marker}");
