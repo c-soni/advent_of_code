@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::iter::Skip;
@@ -7,16 +8,18 @@ extern crate lazy_static;
 
 use regex::Regex;
 
+#[derive(Clone)]
 struct File {
     pub _name: String,
     pub size: u32,
 }
 
+#[derive(Clone)]
 struct Directory {
+    pub total_size: u32,
     pub name: String,
     pub dirs: Vec<Directory>,
     pub files: Vec<File>,
-    pub total_size: u32,
 }
 
 fn traverse(lines_iter: &mut Skip<std::str::Lines>, current_dir: &mut Directory) {
@@ -57,26 +60,24 @@ fn traverse(lines_iter: &mut Skip<std::str::Lines>, current_dir: &mut Directory)
     }
 }
 
-fn calculate_sizes(dir: &mut Directory) -> u32 {
+fn calculate_sizes(dir: &mut Directory, dir_map: &mut HashMap<String, Directory>) -> u32 {
     dir.total_size = dir.files.iter().map(|file| file.size).fold(0, |a, b| a + b)
         + dir
             .dirs
             .iter_mut()
-            .map(|dir| calculate_sizes(dir))
+            .map(|dir| calculate_sizes(dir, dir_map))
             .fold(0, |a, b| a + b);
+    dir_map.insert(dir.name.to_string(), dir.clone());
     dir.total_size
 }
 
-fn partial_sum(dir: &Directory) -> u32 {
-    let mut sum: u32 = 0;
-    if dir.total_size <= 100000 {
-        sum = dir.total_size;
-    }
-    sum + dir
-        .dirs
+fn smallest_dir_size(used_space: u32, dir_map: &HashMap<String, Directory>) -> u32 {
+    dir_map
         .iter()
-        .map(|dir| partial_sum(dir))
-        .fold(0, |a, b| a + b)
+        .filter(|(_, d)| 70000000 - used_space + d.total_size >= 30000000)
+        .min_by_key(|(_, d)| d.total_size)
+        .map(|(_, d)| d.total_size)
+        .unwrap()
 }
 
 fn main() {
@@ -94,7 +95,9 @@ fn main() {
     };
     traverse(&mut lines_iter, &mut root_dir);
 
-    let _x = calculate_sizes(&mut root_dir);
-    let sum = partial_sum(&root_dir);
-    println!("Partial Total: {sum}");
+    let mut dir_map: HashMap<String, Directory> = HashMap::new();
+    let used_space = calculate_sizes(&mut root_dir, &mut dir_map);
+
+    let smallest_dir = smallest_dir_size(used_space, &dir_map);
+    println!("Minimum dir size: {smallest_dir}");
 }
